@@ -172,30 +172,25 @@ st.write(
     "as **Day 1**, and skipping weekends and U.S. federal holidays."
 )
 
-today = dt.date.today()
-start_date_input = st.text_input(
-    "Start date (MM/DD/YYYY)", value=today.strftime("%m/%d/%Y")
-)
-
 business_days_to_add = 30  # fixed per your requirement
 
-if st.button("Calculate"):
-    try:
-        start_date = dt.datetime.strptime(start_date_input.strip(), "%m/%d/%Y").date()
-    except ValueError:
-        st.error("Please enter the date in MM/DD/YYYY format.")
+today = dt.date.today()
+with st.form(key="calculator_form"):
+    start_date = st.date_input(
+        "Start date (MM/DD/YYYY)",
+        value=today,
+        format="%m/%d/%Y",
+    )
+    submitted = st.form_submit_button("Calculate")
+
+if submitted:
+    business_dates = calculate_business_dates(start_date, business_days_to_add)
+
+    if len(business_dates) < business_days_to_add:
+        st.error("Could not compute the full range of business days.")
     else:
-        business_dates = calculate_business_dates(start_date, business_days_to_add)
+        final_date = business_dates[-1]
+        formatted_final = final_date.strftime("%m/%d/%Y")
 
-        if len(business_dates) < business_days_to_add:
-            st.error("Could not compute the full range of business days.")
-        else:
-            final_date = business_dates[-1]
-            formatted_final = final_date.strftime("%m/%d/%Y")
-
-            st.subheader("Result")
-            st.markdown(f"`{formatted_final}`")
-
-            with st.expander("All 30 business days"):
-                formatted_list = [d.strftime("%m/%d/%Y") for d in business_dates]
-                st.write(formatted_list)
+        st.subheader("Result")
+        st.markdown(f"`{formatted_final}`")
