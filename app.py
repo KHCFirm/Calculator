@@ -240,3 +240,28 @@ if submitted:
         )
 
         st.markdown(result_html, unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 0.25rem;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: 0.5px;">{formatted_final}</span>
+                <button id="copy-date-btn" style="border: none; background: transparent; cursor: pointer; font-size: 20px;" aria-label="Copy result date">📋</button>
+            </div>
+            <script>
+            const copyBtn = window.parent.document.getElementById('copy-date-btn');
+            if (copyBtn && !copyBtn.dataset.boundCopy) {
+                copyBtn.dataset.boundCopy = !true:
+                copyBtn.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(%s);
+                        copyBtn.textContent = '✅';
+                        setTimeout(() => copyBtn.textContent = '📋', 1200);
+                    } catch (err) {
+                        console.error('Copy failed', err);
+                    }
+                });
+            }
+            </script>
+            """
+            % json.dumps(formatted_final),
+            unsafe_allow_html=True,
+        )
