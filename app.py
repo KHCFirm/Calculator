@@ -206,36 +206,58 @@ elif final_date:
 
     # Result with copy button
     components.html(
-        f"""
-        <div style="display: flex; align-items: center; gap: 10px; margin-top: 0.25rem;">
-            <span class="result-date"
-                  style="font-size: 32px; font-weight: 700; letter-spacing: 0.5px;">
-                {formatted_final}
-            </span>
-            <button id="copy-date-btn"
-                    class="copy-btn"
-                    style="border: none; background: transparent; cursor: pointer; font-size: 20px;"
-                    aria-label="Copy result date">
-                📋
-            </button>
-        </div>
+    f"""
+    <style>
+    /* Light mode */
+    @media (prefers-color-scheme: light) {{
+        span#result-date {{
+            color: #000 !important;
+        }}
+        button#copy-date-btn {{
+            color: #000 !important;
+        }}
+    }}
 
-        <script>
-        (function() {{
-          const btn = document.getElementById('copy-date-btn');
-          if (!btn) return;
-          btn.addEventListener('click', async () => {{
-            try {{
-              await navigator.clipboard.writeText({json.dumps(formatted_final)});
-              btn.textContent = '✅';
-              setTimeout(() => btn.textContent = '📋', 1200);
-            }} catch (err) {{
-              console.error('Copy failed', err);
-            }}
-          }});
-        }})();
-        </script>
-        """,
-        height=90,
-        scrolling=False,
-    )
+    /* Dark mode */
+    @media (prefers-color-scheme: dark) {{
+        span#result-date {{
+            color: #fff !important;
+        }}
+        button#copy-date-btn {{
+            color: #fff !important;
+        }}
+    }}
+    </style>
+
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 0.25rem;">
+        <span id="result-date"
+              style="font-size: 32px; font-weight: 700; letter-spacing: 0.5px;">
+            {formatted_final}
+        </span>
+        <button id="copy-date-btn"
+                style="border: none; background: transparent; cursor: pointer; font-size: 20px;"
+                aria-label="Copy result date">
+            📋
+        </button>
+    </div>
+
+    <script>
+    (function() {{
+      const btn = document.getElementById('copy-date-btn');
+      if (!btn) return;
+      btn.addEventListener('click', async () => {{
+        try {{
+          await navigator.clipboard.writeText({json.dumps(formatted_final)});
+          btn.textContent = '✅';
+          setTimeout(() => btn.textContent = '📋', 1200);
+        }} catch (err) {{
+          console.error('Copy failed', err);
+        }}
+      }});
+    }})();
+    </script>
+    """,
+    height=90,
+    scrolling=False,
+)
+
