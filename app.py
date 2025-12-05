@@ -1,7 +1,7 @@
 import datetime as dt
 import json
 from functools import lru_cache
-from typing import List, Set
+from typing import List, Set, Optional
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -141,113 +141,30 @@ st.set_page_config(
     layout="centered",
 )
 
-# Global styling for card + theme-aware colors, and remove the top white "bubble"
+# Minimal styling: keep default layout, just theme-aware result colors
 st.markdown(
     """
     <style>
-    /* Remove Streamlit default header/decor bubble */
-    header {visibility: hidden;}
-    section[data-testid="stDecoration"] {display: none;}
-    [data-testid="stHeader"] {height: 0px !important;}
-    .stApp {padding-top: 0 !important;}
-
-    :root {
-        --card-radius: 16px;
-        --card-padding-y: 1.6rem;
-        --card-padding-x: 1.6rem;
-    }
-
-    .main .block-container {
-        max-width: 420px;
-        padding-top: 2.5rem !important;
-        padding-bottom: 3rem;
-    }
-
-    /* Light mode */
+    /* Theme-aware colors for result & copy button */
     @media (prefers-color-scheme: light) {
-        .stApp {
-            background: #f3f4f6;
-        }
-        .app-card {
-            background: #ffffff;
-            color: #0f172a;
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            box-shadow: 0 18px 35px rgba(15, 23, 42, 0.10);
-        }
-        .app-subtitle {
-            color: #475569;
-        }
+        .result-date { color: #000000 !important; }
+        .copy-btn { color: #000000 !important; }
     }
-
-    /* Dark mode */
     @media (prefers-color-scheme: dark) {
-        .stApp {
-            background: radial-gradient(circle at top, #0f172a 0%, #020617 70%);
-        }
-        .app-card {
-            background: #020617;
-            color: #e5e7eb;
-            border: 1px solid rgba(148, 163, 184, 0.4);
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75);
-        }
-        .app-subtitle {
-            color: #94a3b8;
-        }
-    }
-
-    .app-card {
-        border-radius: var(--card-radius);
-        padding: var(--card-padding-y) var(--card-padding-x) 2rem var(--card-padding-x);
-    }
-
-    .app-header-icon {
-        font-size: 32px;
-        margin-bottom: 0.4rem;
-    }
-
-    .app-title {
-        font-size: 1.6rem;
-        font-weight: 700;
-        margin-bottom: 0.3rem;
-    }
-
-    .app-subtitle {
-        font-size: 0.92rem;
-        margin-top: 0rem;
-        margin-bottom: 1.2rem;
-        line-height: 1.4rem;
-    }
-
-    .stTextInput label {
-        font-weight: 600;
-        margin-bottom: 0.2rem;
-        font-size: 0.9rem;
-    }
-
-    .stTextInput > div > div > input {
-        border-radius: 8px;
-        padding: 0.45rem 0.8rem;
-        border: 1px solid rgba(148, 163, 184, 0.45);
-        font-size: 0.92rem;
+        .result-date { color: #ffffff !important; }
+        .copy-btn { color: #ffffff !important; }
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# ----- Card wrapper open -----
-st.markdown('<div class="app-card">', unsafe_allow_html=True)
+st.title("30 Business Day Calculator")
 
-# Icon (no bubble) + title/subtitle
-st.markdown('<div class="app-header-icon">📅</div>', unsafe_allow_html=True)
-st.markdown('<div class="app-title">30 Business Day Calculator</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="app-subtitle">'
-    "Enter a start date in <strong>MM/DD/YYYY</strong> format. "
-    "The start date counts as <strong>Day 1</strong>. "
-    "Weekends and U.S. federal holidays are skipped."
-    "</div>",
-    unsafe_allow_html=True,
+st.write(
+    "Enter a start date in **MM/DD/YYYY** format. The app will calculate "
+    "the date that is **30 business days** away, counting the start date "
+    "as **Day 1**, and skipping weekends and U.S. federal holidays."
 )
 
 business_days_to_add = 30
@@ -261,8 +178,8 @@ start_date_str = st.text_input(
     help="Example: 03/15/2025",
 )
 
-final_date: dt.date | None = None
-error_msg: str | None = None
+final_date: Optional[dt.date] = None
+error_msg: Optional[str] = None
 
 if start_date_str.strip():
     try:
@@ -287,29 +204,9 @@ elif final_date:
 
     st.subheader("Result")
 
-    # Theme-aware result styling with copy button
+    # Result with copy button
     components.html(
         f"""
-        <style>
-        /* Default (light) */
-        .result-date {{
-            color: #000000;
-        }}
-        .copy-btn {{
-            color: #000000;
-        }}
-
-        /* Dark mode */
-        @media (prefers-color-scheme: dark) {{
-            .result-date {{
-                color: #ffffff !important;
-            }}
-            .copy-btn {{
-                color: #ffffff !important;
-            }}
-        }}
-        </style>
-
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 0.25rem;">
             <span class="result-date"
                   style="font-size: 32px; font-weight: 700; letter-spacing: 0.5px;">
@@ -342,6 +239,3 @@ elif final_date:
         height=90,
         scrolling=False,
     )
-
-# ----- Card wrapper close -----
-st.markdown("</div>", unsafe_allow_html=True)
