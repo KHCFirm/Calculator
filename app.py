@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 from functools import lru_cache
 
 import streamlit as st
@@ -181,7 +182,27 @@ with st.form(key="calculator_form"):
         value=today,
         format="MM/DD/YYYY",
     )
-    submitted = st.form_submit_button("Calculate")
+    submitted = st.form_submit_button("Calculate", type="primary")
+
+st.markdown(
+    """
+    <script>
+    const root = window.parent.document;
+    const dateInput = root.querySelector('input[aria-label="Start date (MM/DD/YYYY)"]');
+    const calcButton = Array.from(root.querySelectorAll('button')).find((btn) => btn.innerText.trim() === 'Calculate');
+    if (dateInput && calcButton && !dateInput.dataset.enterSubmitBound) {
+        dateInput.dataset.enterSubmitBound = 'true';
+        dateInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                calcButton.click();
+            }
+        });
+    }
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
 
 if submitted:
     business_dates = calculate_business_dates(start_date, business_days_to_add)
@@ -193,4 +214,28 @@ if submitted:
         formatted_final = final_date.strftime("%m/%d/%Y")
 
         st.subheader("Result")
-        st.markdown(f"`{formatted_final}`")
+        st.markdown(
+            f"""
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 0.25rem;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: 0.5px;">{formatted_final}</span>
+                <button id="copy-date-btn" style="border: none; background: transparent; cursor: pointer; font-size: 20px;" aria-label="Copy result date">📋</button>
+            </div>
+            <script>
+            const copyBtn = window.parent.document.getElementById('copy-date-btn');
+            if (copyBtn && !copyBtn.dataset.boundCopy) {
+                copyBtn.dataset.boundCopy = 'true';
+                copyBtn.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(%s);
+                        copyBtn.textContent = '✅';
+                        setTimeout(() => copyBtn.textContent = '📋', 1200);
+                    } catch (err) {
+                        console.error('Copy failed', err);
+                    }
+                });
+            }
+            </script>
+            """
+            % json.dumps(formatted_final),
+            unsafe_allow_html=True,
+        )
