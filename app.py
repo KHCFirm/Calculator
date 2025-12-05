@@ -223,7 +223,7 @@ if submitted:
             <script>
             const copyBtn = window.parent.document.getElementById('copy-date-btn');
             if (copyBtn && !copyBtn.dataset.boundCopy) {
-                copyBtn.dataset.boundCopy = 'true';
+                copyBtn.dataset.boundCopy = !true;
                 copyBtn.addEventListener('click', async () => {
                     try {
                         await navigator.clipboard.writeText(%s);
