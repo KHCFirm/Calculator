@@ -141,47 +141,26 @@ st.set_page_config(
     layout="centered",
 )
 
-# Global styling for card + theme-aware colors
+# Global styling for card + theme-aware colors, and remove the top white "bubble"
 st.markdown(
     """
     <style>
+    /* Remove Streamlit default header/decor bubble */
+    header {visibility: hidden;}
+    section[data-testid="stDecoration"] {display: none;}
+    [data-testid="stHeader"] {height: 0px !important;}
+    .stApp {padding-top: 0 !important;}
+
     :root {
         --card-radius: 16px;
-        --card-padding-y: 1.5rem;
+        --card-padding-y: 1.6rem;
         --card-padding-x: 1.6rem;
-        --accent-color: #2563eb;
-        --accent-color-soft: rgba(37, 99, 235, 0.12);
     }
 
     .main .block-container {
         max-width: 420px;
-        padding-top: 3.2rem;
-        padding-bottom: 3.2rem;
-    }
-
-    /* App card wrapper */
-    .app-card {
-        border-radius: var(--card-radius);
-        padding: var(--card-padding-y) var(--card-padding-x);
-        border: 1px solid rgba(148, 163, 184, 0.35);
-    }
-
-    .app-header-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 999px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 0.2rem;
-        font-size: 20px;
-    }
-
-    .app-subtitle {
-        font-size: 0.9rem;
-        margin-top: -0.4rem;
-        margin-bottom: 1.2rem;
-        opacity: 0.8;
+        padding-top: 2.5rem !important;
+        padding-bottom: 3rem;
     }
 
     /* Light mode */
@@ -192,54 +171,64 @@ st.markdown(
         .app-card {
             background: #ffffff;
             color: #0f172a;
-            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            box-shadow: 0 18px 35px rgba(15, 23, 42, 0.10);
         }
-        .app-header-icon {
-            background: var(--accent-color-soft);
-            color: var(--accent-color);
+        .app-subtitle {
+            color: #475569;
         }
     }
 
     /* Dark mode */
     @media (prefers-color-scheme: dark) {
         .stApp {
-            background: radial-gradient(circle at top, #0f172a 0, #020617 60%);
+            background: radial-gradient(circle at top, #0f172a 0%, #020617 70%);
         }
         .app-card {
             background: #020617;
             color: #e5e7eb;
-            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.7);
-            border-color: rgba(148, 163, 184, 0.4);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75);
         }
-        .app-header-icon {
-            background: rgba(37, 99, 235, 0.2);
-            color: #bfdbfe;
+        .app-subtitle {
+            color: #94a3b8;
         }
     }
 
-    /* Tweak title spacing */
-    .app-card h1 {
-        font-size: 1.35rem;
+    .app-card {
+        border-radius: var(--card-radius);
+        padding: var(--card-padding-y) var(--card-padding-x) 2rem var(--card-padding-x);
+    }
+
+    .app-header-icon {
+        font-size: 32px;
         margin-bottom: 0.4rem;
     }
 
-    /* Input styling */
+    .app-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+    }
+
+    .app-subtitle {
+        font-size: 0.92rem;
+        margin-top: 0rem;
+        margin-bottom: 1.2rem;
+        line-height: 1.4rem;
+    }
+
     .stTextInput label {
         font-weight: 600;
+        margin-bottom: 0.2rem;
         font-size: 0.9rem;
-        margin-bottom: 0.15rem;
     }
 
     .stTextInput > div > div > input {
-        border-radius: 999px;
-        padding: 0.45rem 0.85rem;
-        border: 1px solid rgba(148, 163, 184, 0.85);
-        font-size: 0.9rem;
-    }
-
-    /* Help text under input */
-    .stTooltipIconContainer {
-        display: none;
+        border-radius: 8px;
+        padding: 0.45rem 0.8rem;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        font-size: 0.92rem;
     }
     </style>
     """,
@@ -249,8 +238,9 @@ st.markdown(
 # ----- Card wrapper open -----
 st.markdown('<div class="app-card">', unsafe_allow_html=True)
 
+# Icon (no bubble) + title/subtitle
 st.markdown('<div class="app-header-icon">📅</div>', unsafe_allow_html=True)
-st.title("30 Business Day Calculator")
+st.markdown('<div class="app-title">30 Business Day Calculator</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="app-subtitle">'
     "Enter a start date in <strong>MM/DD/YYYY</strong> format. "
