@@ -1,0 +1,190 @@
+### `app.py`
+
+```python
+import datetime as dt
+from functools import lru_cache
+
+import streamlit as st
+
+
+# --------------------- Holiday helpers ---------------------
+
+
+def nth_weekday_of_month(year: int, month: int, weekday: int, n: int) -> dt.date:
+    """
+    Return the date of the n-th given weekday in a month.
+    month: 1-12, weekday: 0=Monday..6=Sunday, n>=1
+    """
+    # First day of month
+    date = dt.date(year, month, 1)
+    # Convert weekday to Python's 0=Monday..6=Sunday
+    # Our weekday is already in that convention
+    while date.weekday() != weekday:
+        date += dt.timedelta(days=1)
+    # Add 7 days (n-1) times
+    date += dt.timedelta(weeks=n - 1)
+    return date
+
+
+def last_weekday_of_month(year: int, month: int, weekday: int) -> dt.date:
+    """
+    Return the date of the last given weekday in a month.
+    month: 1-12, weekday: 0=Monday..6=Sunday
+    """
+    # Start from last day of month
+    if month == 12:
+        next_month = dt.date(year + 1, 1, 1)
+    else:
+        next_month = dt.date(year, month + 1, 1)
+    date = next_month - dt.timedelta(days=1)
+    while date.weekday() != weekday:
+        date -= dt.timedelta(days=1)
+    return date
+
+
+def observed_date(date: dt.date) -> dt.date:
+    """
+    If holiday falls on Saturday -> observed Friday.
+    If holiday falls on Sunday -> observed Monday.
+    Otherwise, observe on the same day.
+    """
+    if date.weekday() == 5:  # Saturday
+        return date - dt.timedelta(days=1)
+    if date.weekday() == 6:  # Sunday
+        return date + dt.timedelta(days=1)
+    return date
+
+
+@lru_cache(maxsize=None)
+def get_us_holidays_for_year(year: int) -> set[dt.date]:
+    """
+    Return a set of US federal holidays (observed dates) for a given year.
+    Includes:
+    - New Year's Day
+    - Martin Luther King Jr. Day
+    - Presidents Day
+    - Memorial Day
+    - Juneteenth
+    - Independence Day
+    - Labor Day
+    - Columbus / Indigenous Peoples' Day
+    - Veterans Day
+    - Thanksgiving Day
+    - Christmas Day
+    """
+    holidays: list[dt.date] = []
+
+    # 1. New Year's Day (Jan 1)
+    new_year = dt.date(year, 1, 1)
+    holidays.append(observed_date(new_year))
+
+    # 2. MLK Day (3rd Monday in January)
+    holidays.append(nth_weekday_of_month(year, 1, weekday=0, n=3))  # Monday
+
+    # 3. Presidents Day (3rd Monday in February)
+    holidays.append(nth_weekday_of_month(year, 2, weekday=0, n=3))
+
+    # 4. Memorial Day (last Monday in May)
+    holidays.append(last_weekday_of_month(year, 5, weekday=0))
+
+    # 5. Juneteenth (June 19, observed)
+    juneteenth = dt.date(year, 6, 19)
+    holidays.append(observed_date(juneteenth))
+
+    # 6. Independence Day (July 4, observed)
+    independence = dt.date(year, 7, 4)
+    holidays.append(observed_date(independence))
+
+    # 7. Labor Day (1st Monday in September)
+    holidays.append(nth_weekday_of_month(year, 9, weekday=0, n=1))
+
+    # 8. Columbus Day / Indigenous Peoples’ Day (2nd Monday in October)
+    holidays.append(nth_weekday_of_month(year, 10, weekday=0, n=2))
+
+    # 9. Veterans Day (Nov 11, observed)
+    veterans = dt.date(year, 11, 11)
+    holidays.append(observed_date(veterans))
+
+    # 10. Thanksgiving Day (4th Thursday in November)
+    holidays.append(nth_weekday_of_month(year, 11, weekday=3, n=4))  # Thursday
+
+    # 11. Christmas Day (Dec 25, observed)
+    christmas = dt.date(year, 12, 25)
+    holidays.append(observed_date(christmas))
+
+    return set(holidays)
+
+
+def is_federal_holiday(date: dt.date) -> bool:
+    return date in get_us_holidays_for_year(date.year)
+
+
+def is_weekend(date: dt.date) -> bool:
+    # Monday=0 .. Sunday=6
+    return date.weekday() >= 5
+
+
+def is_business_day(date: dt.date) -> bool:
+    return not is_weekend(date) and not is_federal_holiday(date)
+
+
+def calculate_business_dates(start_date: dt.date, business_days: int) -> list[dt.date]:
+    """
+    Return a list of business dates, counting start_date as Day 1
+    if it is a business day. List length will be <= business_days
+    (if the very first date is not a business day).
+    """
+    dates: list[dt.date] = []
+    current = start_date
+    count = 0
+
+    while count < business_days:
+        if is_business_day(current):
+            dates.append(current)
+            count += 1
+            if count == business_days:
+                break
+        current += dt.timedelta(days=1)
+
+    return dates
+
+
+# --------------------- Streamlit UI ---------------------
+
+
+st.set_page_config(
+    page_title="30 Business Day Calculator",
+    layout="centered",
+)
+
+st.title("30 Business Day Calculator")
+
+st.write(
+    "Enter a start date. The app will calculate the date that is "
+    "**30 business days** away, counting the start date as **Day 1**, "
+    "and skipping weekends and U.S. federal holidays."
+)
+
+today = dt.date.today()
+start_date = st.date_input("Start date", value=today)
+
+business_days_to_add = 30  # fixed per your requirement
+
+if st.button("Calculate"):
+    if not isinstance(start_date, dt.date):
+        st.error("Please select a valid start date.")
+    else:
+        business_dates = calculate_business_dates(start_date, business_days_to_add)
+
+        if len(business_dates) < business_days_to_add:
+            st.error("Could not compute the full range of business days.")
+        else:
+            final_date = business_dates[-1]
+            formatted_final = final_date.strftime("%m/%d/%Y")
+
+            st.subheader("Result")
+            st.markdown(f"**30th business day:** `{formatted_final}`")
+
+            with st.expander("Show all 30 business days"):
+                formatted_list = [d.strftime("%m/%d/%Y") for d in business_dates]
+                st.write(formatted_list)
