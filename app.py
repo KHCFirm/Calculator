@@ -1,6 +1,3 @@
-### `app.py`
-
-```python
 import datetime as dt
 from functools import lru_cache
 
@@ -9,19 +6,14 @@ import streamlit as st
 
 # --------------------- Holiday helpers ---------------------
 
-
 def nth_weekday_of_month(year: int, month: int, weekday: int, n: int) -> dt.date:
     """
     Return the date of the n-th given weekday in a month.
     month: 1-12, weekday: 0=Monday..6=Sunday, n>=1
     """
-    # First day of month
     date = dt.date(year, month, 1)
-    # Convert weekday to Python's 0=Monday..6=Sunday
-    # Our weekday is already in that convention
     while date.weekday() != weekday:
         date += dt.timedelta(days=1)
-    # Add 7 days (n-1) times
     date += dt.timedelta(weeks=n - 1)
     return date
 
@@ -31,7 +23,6 @@ def last_weekday_of_month(year: int, month: int, weekday: int) -> dt.date:
     Return the date of the last given weekday in a month.
     month: 1-12, weekday: 0=Monday..6=Sunday
     """
-    # Start from last day of month
     if month == 12:
         next_month = dt.date(year + 1, 1, 1)
     else:
@@ -79,7 +70,7 @@ def get_us_holidays_for_year(year: int) -> set[dt.date]:
     holidays.append(observed_date(new_year))
 
     # 2. MLK Day (3rd Monday in January)
-    holidays.append(nth_weekday_of_month(year, 1, weekday=0, n=3))  # Monday
+    holidays.append(nth_weekday_of_month(year, 1, weekday=0, n=3))
 
     # 3. Presidents Day (3rd Monday in February)
     holidays.append(nth_weekday_of_month(year, 2, weekday=0, n=3))
@@ -98,7 +89,7 @@ def get_us_holidays_for_year(year: int) -> set[dt.date]:
     # 7. Labor Day (1st Monday in September)
     holidays.append(nth_weekday_of_month(year, 9, weekday=0, n=1))
 
-    # 8. Columbus Day / Indigenous Peoples’ Day (2nd Monday in October)
+    # 8. Columbus Day / Indigenous Peoples' Day (2nd Monday in October)
     holidays.append(nth_weekday_of_month(year, 10, weekday=0, n=2))
 
     # 9. Veterans Day (Nov 11, observed)
@@ -106,7 +97,7 @@ def get_us_holidays_for_year(year: int) -> set[dt.date]:
     holidays.append(observed_date(veterans))
 
     # 10. Thanksgiving Day (4th Thursday in November)
-    holidays.append(nth_weekday_of_month(year, 11, weekday=3, n=4))  # Thursday
+    holidays.append(nth_weekday_of_month(year, 11, weekday=3, n=4))
 
     # 11. Christmas Day (Dec 25, observed)
     christmas = dt.date(year, 12, 25)
@@ -120,7 +111,6 @@ def is_federal_holiday(date: dt.date) -> bool:
 
 
 def is_weekend(date: dt.date) -> bool:
-    # Monday=0 .. Sunday=6
     return date.weekday() >= 5
 
 
@@ -150,7 +140,6 @@ def calculate_business_dates(start_date: dt.date, business_days: int) -> list[dt
 
 
 # --------------------- Streamlit UI ---------------------
-
 
 st.set_page_config(
     page_title="30 Business Day Calculator",
