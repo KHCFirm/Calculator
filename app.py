@@ -179,7 +179,7 @@ with st.form(key="calculator_form"):
     start_date = st.date_input(
         "Start date (MM/DD/YYYY)",
         value=today,
-        format="%m/%d/%Y",
+        format="MM/DD/YYYY",
     )
     submitted = st.form_submit_button("Calculate")
 
