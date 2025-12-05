@@ -81,7 +81,7 @@ def get_us_holidays_for_year(year: int) -> set:
     # 7. Labor Day (1st Monday in September)
     holidays.append(nth_weekday_of_month(year, 9, weekday=0, n=1))
 
-    # 8. Columbus Day / Indigenous Peoples’ Day (2nd Monday in October)
+    # 8. Columbus Day / Indigenous Peoples' Day (2nd Monday in October)
     holidays.append(nth_weekday_of_month(year, 10, weekday=0, n=2))
 
     # 9. Veterans Day (Nov 11, observed)
@@ -136,19 +136,23 @@ def calculate_business_dates(start_date: dt.date, business_days: int) -> list[dt
 
 st.set_page_config(page_title="30 Business Day Calculator", layout="centered")
 
-# Make the app look like a small floating widget in the corner
+# Make the app look like a small floating widget and force white card even in dark mode
 st.markdown(
     """
     <style>
+    .stApp {
+        background-color: #111827;
+    }
     .main .block-container {
         max-width: 380px;
         padding: 1.5rem 1.25rem;
         position: fixed;
         top: 1rem;
         right: 1rem;
-        background: #ffffff;
+        background: #ffffff !important;
         box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
         border-radius: 12px;
+        color: #111827 !important;
     }
     </style>
     """,
@@ -165,94 +169,71 @@ st.write(
 
 business_days_to_add = 30
 today = dt.date.today()
+default_str = today.strftime("%m/%d/%Y")
 
-# Form for date input + button
-with st.form(key="calculator_form"):
-    start_date = st.date_input(
-        "Start date (MM/DD/YYYY)",
-        value=today,
-        format="MM/DD/YYYY",  # requires Streamlit ≥ 1.30
-    )
-    submitted = st.form_submit_button("Calculate", type="primary")
-
-# Small JS helper to submit on Enter from the date input
-# Uses a hidden component so we can safely run JS
-components.html(
-    """
-    <script>
-    (function() {
-      const root = window.parent.document;
-
-      function bindEnter() {
-        const dateInput = root.querySelector('input[aria-label="Start date (MM/DD/YYYY)"]');
-        if (!dateInput) return;
-
-        const buttons = Array.from(root.querySelectorAll('button'));
-        const calcButton = buttons.find(btn => btn.innerText.trim() === 'Calculate');
-        if (!calcButton) return;
-
-        if (dateInput.dataset.enterSubmitBound === 'true') return;
-        dateInput.dataset.enterSubmitBound = 'true';
-
-        dateInput.addEventListener('keydown', function(event) {
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            calcButton.click();
-          }
-        });
-      }
-
-      const observer = new MutationObserver(bindEnter);
-      observer.observe(root.body, { childList: true, subtree: true });
-      bindEnter();
-    })();
-    </script>
-    """,
-    height=0,
-    width=0,
+# Text input so Enter triggers a rerun naturally
+start_date_str = st.text_input(
+    "Start date (MM/DD/YYYY)",
+    value=default_str,
+    help="Example: 03/15/2025",
 )
 
-if submitted:
-    business_dates = calculate_business_dates(start_date, business_days_to_add)
+final_date = None
+error_msg = None
 
-    if len(business_dates) < business_days_to_add:
-        st.error("Could not compute the full range of business days.")
-    else:
-        final_date = business_dates[-1]
-        formatted_final = final_date.strftime("%m/%d/%Y")
+if start_date_str.strip():
+    try:
+        # Parse MM/DD/YYYY
+        month, day, year = start_date_str.strip().split("/")
+        start_date = dt.date(int(year), int(month), int(day))
 
-        st.subheader("Result")
+        business_dates = calculate_business_dates(start_date, business_days_to_add)
 
-        # Render result + copy button with JS in a small iframe component
-        components.html(
-            f"""
-            <div style="display: flex; align-items: center; gap: 10px; margin-top: 0.25rem;">
-                <span id="result-date"
-                      style="font-size: 32px; font-weight: 700; letter-spacing: 0.5px;">
-                    {formatted_final}
-                </span>
-                <button id="copy-date-btn"
-                        style="border: none; background: transparent; cursor: pointer; font-size: 20px;"
-                        aria-label="Copy result date">
-                    📋
-                </button>
-            </div>
-            <script>
-            (function() {{
-              const btn = document.getElementById('copy-date-btn');
-              if (!btn) return;
-              btn.addEventListener('click', async () => {{
-                try {{
-                  await navigator.clipboard.writeText({json.dumps(formatted_final)});
-                  btn.textContent = '✅';
-                  setTimeout(() => btn.textContent = '📋', 1200);
-                }} catch (err) {{
-                  console.error('Copy failed', err);
-                }}
-              }});
-            }})();
-            </script>
-            """,
-            height=80,
-            scrolling=False,
-        )
+        if len(business_dates) < business_days_to_add:
+            error_msg = "Could not compute the full range of business days."
+        else:
+            final_date = business_dates[-1]
+    except ValueError:
+        error_msg = "Please enter a valid date in MM/DD/YYYY format."
+
+# Show result or error
+if error_msg:
+    st.error(error_msg)
+elif final_date:
+    formatted_final = final_date.strftime("%m/%d/%Y")
+
+    st.subheader("Result")
+
+    # Render result + copy button with JS in a small iframe component
+    components.html(
+        f"""
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 0.25rem;">
+            <span id="result-date"
+                  style="font-size: 32px; font-weight: 700; letter-spacing: 0.5px; color: #111827;">
+                {formatted_final}
+            </span>
+            <button id="copy-date-btn"
+                    style="border: none; background: transparent; cursor: pointer; font-size: 20px;"
+                    aria-label="Copy result date">
+                📋
+            </button>
+        </div>
+        <script>
+        (function() {{
+          const btn = document.getElementById('copy-date-btn');
+          if (!btn) return;
+          btn.addEventListener('click', async () => {{
+            try {{
+              await navigator.clipboard.writeText({json.dumps(formatted_final)});
+              btn.textContent = '✅';
+              setTimeout(() => btn.textContent = '📋', 1200);
+            }} catch (err) {{
+              console.error('Copy failed', err);
+            }}
+          }});
+        }})();
+        </script>
+        """,
+        height=80,
+        scrolling=False,
+    )
