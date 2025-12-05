@@ -1,5 +1,7 @@
 import datetime as dt
+import json
 from functools import lru_cache
+from string import Template
 
 import streamlit as st
 
@@ -172,30 +174,74 @@ st.write(
     "as **Day 1**, and skipping weekends and U.S. federal holidays."
 )
 
-today = dt.date.today()
-start_date_input = st.text_input(
-    "Start date (MM/DD/YYYY)", value=today.strftime("%m/%d/%Y")
-)
-
 business_days_to_add = 30  # fixed per your requirement
 
-if st.button("Calculate"):
-    try:
-        start_date = dt.datetime.strptime(start_date_input.strip(), "%m/%d/%Y").date()
-    except ValueError:
-        st.error("Please enter the date in MM/DD/YYYY format.")
+today = dt.date.today()
+with st.form(key="calculator_form"):
+    start_date = st.date_input(
+        "Start date (MM/DD/YYYY)",
+        value=today,
+        format="MM/DD/YYYY",
+    )
+    submitted = st.form_submit_button("Calculate", type="primary")
+
+st.markdown(
+    """
+    <script>
+    const root = window.parent.document;
+    const dateInput = root.querySelector('input[aria-label="Start date (MM/DD/YYYY)"]');
+    const calcButton = Array.from(root.querySelectorAll('button')).find((btn) => btn.innerText.trim() === 'Calculate');
+    if (dateInput && calcButton && !dateInput.dataset.enterSubmitBound) {
+        dateInput.dataset.enterSubmitBound = 'true';
+        dateInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                calcButton.click();
+            }
+        });
+    }
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
+
+if submitted:
+    business_dates = calculate_business_dates(start_date, business_days_to_add)
+
+    if len(business_dates) < business_days_to_add:
+        st.error("Could not compute the full range of business days.")
     else:
-        business_dates = calculate_business_dates(start_date, business_days_to_add)
+        final_date = business_dates[-1]
+        formatted_final = final_date.strftime("%m/%d/%Y")
 
-        if len(business_dates) < business_days_to_add:
-            st.error("Could not compute the full range of business days.")
-        else:
-            final_date = business_dates[-1]
-            formatted_final = final_date.strftime("%m/%d/%Y")
+        st.subheader("Result")
+        result_template = Template(
+            """
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 0.25rem;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: 0.5px;">${formatted_final}</span>
+                <button id="copy-date-btn" style="border: none; background: transparent; cursor: pointer; font-size: 20px;" aria-label="Copy result date">📋</button>
+            </div>
+            <script>
+            const copyBtn = window.parent.document.getElementById('copy-date-btn');
+            if (copyBtn && !copyBtn.dataset.boundCopy) {
+                copyBtn.dataset.boundCopy = 'true';
+                copyBtn.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(${json_formatted});
+                        copyBtn.textContent = '✅';
+                        setTimeout(() => copyBtn.textContent = '📋', 1200);
+                    } catch (err) {
+                        console.error('Copy failed', err);
+                    }
+                });
+            }
+            </script>
+            """
+        )
 
-            st.subheader("Result")
-            st.markdown(f"`{formatted_final}`")
+        result_html = result_template.substitute(
+            formatted_final=formatted_final,
+            json_formatted=json.dumps(formatted_final),
+        )
 
-            with st.expander("All 30 business days"):
-                formatted_list = [d.strftime("%m/%d/%Y") for d in business_dates]
-                st.write(formatted_list)
+        st.markdown(result_html, unsafe_allow_html=True)
