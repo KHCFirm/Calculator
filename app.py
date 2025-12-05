@@ -1,6 +1,7 @@
 import datetime as dt
 import json
 from functools import lru_cache
+from typing import List, Set
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -51,11 +52,11 @@ def observed_date(date: dt.date) -> dt.date:
 
 
 @lru_cache(maxsize=None)
-def get_us_holidays_for_year(year: int) -> set:
+def get_us_holidays_for_year(year: int) -> Set[dt.date]:
     """
     Return a set of US federal holidays (observed dates) for a given year.
     """
-    holidays = []
+    holidays: List[dt.date] = []
 
     # 1. New Year's Day (Jan 1)
     new_year = dt.date(year, 1, 1)
@@ -111,12 +112,12 @@ def is_business_day(date: dt.date) -> bool:
     return not is_weekend(date) and not is_federal_holiday(date)
 
 
-def calculate_business_dates(start_date: dt.date, business_days: int) -> list[dt.date]:
+def calculate_business_dates(start_date: dt.date, business_days: int) -> List[dt.date]:
     """
     Return a list of business dates, counting start_date as Day 1
     if it is a business day. List length == business_days when successful.
     """
-    dates: list[dt.date] = []
+    dates: List[dt.date] = []
     current = start_date
     count = 0
 
@@ -134,37 +135,129 @@ def calculate_business_dates(start_date: dt.date, business_days: int) -> list[dt
 # --------------------- Streamlit UI ---------------------
 
 
-st.set_page_config(page_title="30 Business Day Calculator", layout="centered")
+st.set_page_config(
+    page_title="30 Business Day Calculator",
+    page_icon="📅",
+    layout="centered",
+)
 
-# Make the app look like a small floating widget and force white card even in dark mode
+# Global styling for card + theme-aware colors
 st.markdown(
     """
     <style>
-    .stApp {
-        background-color: #111827;
+    :root {
+        --card-radius: 16px;
+        --card-padding-y: 1.5rem;
+        --card-padding-x: 1.6rem;
+        --accent-color: #2563eb;
+        --accent-color-soft: rgba(37, 99, 235, 0.12);
     }
+
     .main .block-container {
-        max-width: 380px;
-        padding: 1.5rem 1.25rem;
-        position: fixed;
-        top: 1rem;
-        right: 1rem;
-        background: #ffffff !important;
-        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
-        border-radius: 12px;
-        color: #111827 !important;
+        max-width: 420px;
+        padding-top: 3.2rem;
+        padding-bottom: 3.2rem;
+    }
+
+    /* App card wrapper */
+    .app-card {
+        border-radius: var(--card-radius);
+        padding: var(--card-padding-y) var(--card-padding-x);
+        border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .app-header-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.2rem;
+        font-size: 20px;
+    }
+
+    .app-subtitle {
+        font-size: 0.9rem;
+        margin-top: -0.4rem;
+        margin-bottom: 1.2rem;
+        opacity: 0.8;
+    }
+
+    /* Light mode */
+    @media (prefers-color-scheme: light) {
+        .stApp {
+            background: #f3f4f6;
+        }
+        .app-card {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+        }
+        .app-header-icon {
+            background: var(--accent-color-soft);
+            color: var(--accent-color);
+        }
+    }
+
+    /* Dark mode */
+    @media (prefers-color-scheme: dark) {
+        .stApp {
+            background: radial-gradient(circle at top, #0f172a 0, #020617 60%);
+        }
+        .app-card {
+            background: #020617;
+            color: #e5e7eb;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.7);
+            border-color: rgba(148, 163, 184, 0.4);
+        }
+        .app-header-icon {
+            background: rgba(37, 99, 235, 0.2);
+            color: #bfdbfe;
+        }
+    }
+
+    /* Tweak title spacing */
+    .app-card h1 {
+        font-size: 1.35rem;
+        margin-bottom: 0.4rem;
+    }
+
+    /* Input styling */
+    .stTextInput label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .stTextInput > div > div > input {
+        border-radius: 999px;
+        padding: 0.45rem 0.85rem;
+        border: 1px solid rgba(148, 163, 184, 0.85);
+        font-size: 0.9rem;
+    }
+
+    /* Help text under input */
+    .stTooltipIconContainer {
+        display: none;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.title("30 Business Day Calculator")
+# ----- Card wrapper open -----
+st.markdown('<div class="app-card">', unsafe_allow_html=True)
 
-st.write(
-    "Enter a start date in **MM/DD/YYYY** format. The app will calculate "
-    "the date that is **30 business days** away, counting the start date "
-    "as **Day 1**, and skipping weekends and U.S. federal holidays."
+st.markdown('<div class="app-header-icon">📅</div>', unsafe_allow_html=True)
+st.title("30 Business Day Calculator")
+st.markdown(
+    '<div class="app-subtitle">'
+    "Enter a start date in <strong>MM/DD/YYYY</strong> format. "
+    "The start date counts as <strong>Day 1</strong>. "
+    "Weekends and U.S. federal holidays are skipped."
+    "</div>",
+    unsafe_allow_html=True,
 )
 
 business_days_to_add = 30
@@ -178,14 +271,14 @@ start_date_str = st.text_input(
     help="Example: 03/15/2025",
 )
 
-final_date = None
-error_msg = None
+final_date: dt.date | None = None
+error_msg: str | None = None
 
 if start_date_str.strip():
     try:
         # Parse MM/DD/YYYY
-        month, day, year = start_date_str.strip().split("/")
-        start_date = dt.date(int(year), int(month), int(day))
+        month_str, day_str, year_str = start_date_str.strip().split("/")
+        start_date = dt.date(int(year_str), int(month_str), int(day_str))
 
         business_dates = calculate_business_dates(start_date, business_days_to_add)
 
@@ -194,7 +287,7 @@ if start_date_str.strip():
         else:
             final_date = business_dates[-1]
     except ValueError:
-        error_msg = "Please enter a valid date in MM/DD/YYYY format."
+        error_msg = "Please enter a valid date in MM/DD/YYYY format (e.g., 03/15/2025)."
 
 # Show result or error
 if error_msg:
@@ -204,58 +297,61 @@ elif final_date:
 
     st.subheader("Result")
 
-    # Render result + copy button with JS in a small iframe component
+    # Theme-aware result styling with copy button
     components.html(
-    f"""
-    <style>
-    /* Default (light mode) */
-    #result-date {{
-        color: #000000;
-    }}
-    #copy-date-btn {{
-        color: #000000;
-    }}
-
-    /* Dark mode detection */
-    @media (prefers-color-scheme: dark) {{
-        #result-date {{
-            color: #ffffff !important;
+        f"""
+        <style>
+        /* Default (light) */
+        .result-date {{
+            color: #000000;
         }}
-        #copy-date-btn {{
-            color: #ffffff !important;
+        .copy-btn {{
+            color: #000000;
         }}
-    }}
-    </style>
 
-    <div style="display: flex; align-items: center; gap: 10px; margin-top: 0.25rem;">
-        <span id="result-date"
-              style="font-size: 32px; font-weight: 700; letter-spacing: 0.5px;">
-            {formatted_final}
-        </span>
-
-        <button id="copy-date-btn"
-                style="border: none; background: transparent; cursor: pointer; font-size: 20px;"
-                aria-label="Copy result date">
-            📋
-        </button>
-    </div>
-
-    <script>
-    (function() {{
-      const btn = document.getElementById('copy-date-btn');
-      if (!btn) return;
-      btn.addEventListener('click', async () => {{
-        try {{
-          await navigator.clipboard.writeText({json.dumps(formatted_final)});
-          btn.textContent = '✅';
-          setTimeout(() => btn.textContent = '📋', 1200);
-        }} catch (err) {{
-          console.error('Copy failed', err);
+        /* Dark mode */
+        @media (prefers-color-scheme: dark) {{
+            .result-date {{
+                color: #ffffff !important;
+            }}
+            .copy-btn {{
+                color: #ffffff !important;
+            }}
         }}
-      }});
-    }})();
-    </script>
-    """,
-    height=80,
-    scrolling=False,
-)
+        </style>
+
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 0.25rem;">
+            <span class="result-date"
+                  style="font-size: 32px; font-weight: 700; letter-spacing: 0.5px;">
+                {formatted_final}
+            </span>
+            <button id="copy-date-btn"
+                    class="copy-btn"
+                    style="border: none; background: transparent; cursor: pointer; font-size: 20px;"
+                    aria-label="Copy result date">
+                📋
+            </button>
+        </div>
+
+        <script>
+        (function() {{
+          const btn = document.getElementById('copy-date-btn');
+          if (!btn) return;
+          btn.addEventListener('click', async () => {{
+            try {{
+              await navigator.clipboard.writeText({json.dumps(formatted_final)});
+              btn.textContent = '✅';
+              setTimeout(() => btn.textContent = '📋', 1200);
+            }} catch (err) {{
+              console.error('Copy failed', err);
+            }}
+          }});
+        }})();
+        </script>
+        """,
+        height=90,
+        scrolling=False,
+    )
+
+# ----- Card wrapper close -----
+st.markdown("</div>", unsafe_allow_html=True)
