@@ -146,22 +146,44 @@ st.set_page_config(
     layout="centered",
 )
 
+st.markdown(
+    """
+    <style>
+    .main .block-container {
+        max-width: 380px;
+        padding: 1.5rem 1.25rem;
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        background: #ffffff;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
+        border-radius: 12px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.title("30 Business Day Calculator")
 
 st.write(
-    "Enter a start date. The app will calculate the date that is "
-    "**30 business days** away, counting the start date as **Day 1**, "
-    "and skipping weekends and U.S. federal holidays."
+    "Enter a start date in **MM/DD/YYYY** format. The app will calculate "
+    "the date that is **30 business days** away, counting the start date "
+    "as **Day 1**, and skipping weekends and U.S. federal holidays."
 )
 
 today = dt.date.today()
-start_date = st.date_input("Start date", value=today)
+start_date_input = st.text_input(
+    "Start date (MM/DD/YYYY)", value=today.strftime("%m/%d/%Y")
+)
 
 business_days_to_add = 30  # fixed per your requirement
 
 if st.button("Calculate"):
-    if not isinstance(start_date, dt.date):
-        st.error("Please select a valid start date.")
+    try:
+        start_date = dt.datetime.strptime(start_date_input.strip(), "%m/%d/%Y").date()
+    except ValueError:
+        st.error("Please enter the date in MM/DD/YYYY format.")
     else:
         business_dates = calculate_business_dates(start_date, business_days_to_add)
 
@@ -172,8 +194,8 @@ if st.button("Calculate"):
             formatted_final = final_date.strftime("%m/%d/%Y")
 
             st.subheader("Result")
-            st.markdown(f"**30th business day:** `{formatted_final}`")
+            st.markdown(f"`{formatted_final}`")
 
-            with st.expander("Show all 30 business days"):
+            with st.expander("All 30 business days"):
                 formatted_list = [d.strftime("%m/%d/%Y") for d in business_dates]
                 st.write(formatted_list)
